@@ -1,0 +1,154 @@
+import os
+import shutil
+from datetime import datetime
+
+# ================= CLEAN PATH =================
+def clean_path(path):
+    path = path.strip()               # Remove extra spaces
+    path = path.replace("\\", "/")    # Convert \ to /
+    return path
+
+
+# ================= LOG FUNCTION =================
+def write_log(message):
+    with open("logs.txt", "a") as log:
+        log.write(f"{datetime.now()} - {message}\n")
+
+
+# ================= MENU =================
+def show_menu():
+    print("\n====== FILE AUTOMATION TOOL ======")
+    print("1. Rename files")
+    print("2. Sort files by extension")
+    print("3. Clean temporary files")
+    print("4. Exit")
+
+
+# ================= RENAME FILES =================
+def rename_files(folder_path, prefix):
+    try:
+        if not os.path.exists(folder_path):
+            print("Folder does not exist.")
+            write_log("Rename failed - folder not found")
+            return
+
+        files = os.listdir(folder_path)
+
+        # Only real files, not directories
+        real_files = [f for f in files if os.path.isfile(os.path.join(folder_path, f))]
+
+        if len(real_files) == 0:
+            print("No files found in folder.")
+            write_log("Rename failed - no files")
+            return
+
+        count = 1
+        for file in real_files:
+            old_path = os.path.join(folder_path, file)
+            ext = os.path.splitext(file)[1]
+            new_name = f"{prefix}_{count}{ext}"
+            new_path = os.path.join(folder_path, new_name)
+
+            try:
+                if not os.path.exists(new_path):
+                    os.rename(old_path, new_path)
+                    write_log(f"Renamed {file} -> {new_name}")
+                else:
+                    write_log(f"Skipped {file} (target exists)")
+            except Exception as e:
+                write_log(f"Rename failed for {file}: {str(e)}")
+
+            count += 1
+
+        print("Files renamed successfully.")
+
+    except Exception as e:
+        write_log(f"Rename error: {str(e)}")
+        print("Error occurred while renaming.")
+
+
+# ================= SORT FILES =================
+def sort_files(folder_path):
+    try:
+        if not os.path.exists(folder_path):
+            print("Folder does not exist.")
+            write_log("Sort failed - folder not found")
+            return
+
+        files = os.listdir(folder_path)
+
+        for file in files:
+            file_path = os.path.join(folder_path, file)
+
+            if os.path.isfile(file_path):
+                ext = os.path.splitext(file)[1][1:].lower()
+
+                if ext == "":
+                    ext = "others"
+
+                dest_folder = os.path.join(folder_path, ext)
+                os.makedirs(dest_folder, exist_ok=True)
+
+                try:
+                    shutil.move(file_path, os.path.join(dest_folder, file))
+                    write_log(f"Moved {file} to {ext} folder")
+                except Exception as e:
+                    write_log(f"Move failed for {file}: {str(e)}")
+
+        print("Files sorted successfully.")
+
+    except Exception as e:
+        write_log(f"Sort error: {str(e)}")
+        print("Error occurred while sorting.")
+
+
+# ================= CLEAN TEMP FILES =================
+def clean_temp_files(folder_path):
+    try:
+        if not os.path.exists(folder_path):
+            print("Folder does not exist.")
+            write_log("Clean failed - folder not found")
+            return
+
+        files = os.listdir(folder_path)
+
+        for file in files:
+            if file.endswith(".tmp") or file.endswith(".log"):
+                try:
+                    os.remove(os.path.join(folder_path, file))
+                    write_log(f"Deleted {file}")
+                except Exception as e:
+                    write_log(f"Failed to delete {file}: {str(e)}")
+
+        print(" Temporary files cleaned.")
+
+    except Exception as e:
+        write_log(f"Clean error: {str(e)}")
+        print(" Error occurred while cleaning.")
+
+
+# ================= MAIN LOOP =================
+while True:
+    show_menu()
+
+    choice = input("\nEnter your choice (1-4): ")
+
+    if choice == "4":
+        print("Exiting program.")
+        break
+
+    folder_path = input("Enter folder path: ")
+    folder_path = clean_path(folder_path)  # FIXED PATH CLEANER
+
+    if choice == "1":
+        prefix = input("Enter new filename prefix: ")
+        rename_files(folder_path, prefix)
+
+    elif choice == "2":
+        sort_files(folder_path)
+
+    elif choice == "3":
+        clean_temp_files(folder_path)
+
+    else:
+        print("Invalid choice. Try again.")
